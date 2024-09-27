@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการ HR</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="hr-dashboard-container">
+        <h2>ยินดีต้อนรับสู่ระบบจัดการ HR</h2>
+        <h3>ฟังก์ชันการใช้งาน</h3>
+        <button onclick="viewEmployees()">ดูข้อมูลพนักงาน</button>
+        <button onclick="addEmployee()">เพิ่มพนักงาน</button>
+        <button onclick="viewLeaveRequests()">ดูคำขอลา</button>
+        <button onclick="logout()">ออกจากระบบ</button>
+
+        <div id="employee-list" style="display:none;">
+            <h3>ข้อมูลพนักงาน</h3>
+            <ul id="employee-data"></ul>
+        </div>
+
+        <div id="employee-form" style="display:none;">
+            <h3>ฟอร์มเพิ่ม/แก้ไขพนักงาน</h3>
+            <input type="hidden" id="edit-index" value="-1">
+            <div class="form-group">
+                <input type="text" id="employee-name" placeholder="ชื่อพนักงาน" required>
+            </div>
+            <div class="form-group">
+                <input type="text" id="employee-position" placeholder="ตำแหน่ง" required>
+            </div>
+            <button onclick="submitEmployee()">บันทึกพนักงาน</button>
+            <div id="employee-message"></div>
+        </div>
+
+        <div id="leave-requests" style="display:none;">
+            <h3>คำขอลา</h3>
+            <ul id="leave-request-list"></ul>
+        </div>
+    </div>
+
+    <script>
+        function viewEmployees() {
+            const employees = JSON.parse(localStorage.getItem('employees')) || [];
+            const employeeData = document.getElementById('employee-data');
+            employeeData.innerHTML = '';
+
+            employees.forEach((employee, index) => {
+                employeeData.innerHTML += `
+                    <li>
+                        ${employee.name} - ตำแหน่ง: ${employee.position}
+                        <button onclick="editEmployee(${index})">แก้ไข</button>
+                        <button onclick="deleteEmployee(${index})">ลบ</button>
+                    </li>
+                `;
+            });
+
+            document.getElementById('employee-list').style.display = "block";
+            document.getElementById('employee-form').style.display = "none";
+            document.getElementById('leave-requests').style.display = "none";
+        }
+
+        function addEmployee() {
+            document.getElementById('employee-form').style.display = "block";
+            document.getElementById('employee-list').style.display = "none";
+            document.getElementById('leave-requests').style.display = "none";
+            document.getElementById('edit-index').value = -1; // ตั้งค่าเป็นเพิ่มพนักงานใหม่
+            document.getElementById('employee-name').value = '';
+            document.getElementById('employee-position').value = '';
+        }
+
+        function editEmployee(index) {
+            const employees = JSON.parse(localStorage.getItem('employees')) || [];
+            const employee = employees[index];
+
+            document.getElementById('edit-index').value = index; // เก็บ index สำหรับแก้ไข
+            document.getElementById('employee-name').value = employee.name;
+            document.getElementById('employee-position').value = employee.position;
+
+            document.getElementById('employee-form').style.display = "block";
+            document.getElementById('employee-list').style.display = "none";
+            document.getElementById('leave-requests').style.display = "none";
+        }
+
+        function deleteEmployee(index) {
+            const employees = JSON.parse(localStorage.getItem('employees')) || [];
+            employees.splice(index, 1);
+            localStorage.setItem('employees', JSON.stringify(employees));
+            viewEmployees(); // รีเฟรชรายการพนักงาน
+        }
+
+        function submitEmployee() {
+            const employeeName = document.getElementById('employee-name').value;
+            const employeePosition = document.getElementById('employee-position').value;
+            const employeeMessage = document.getElementById('employee-message');
+            const index = document.getElementById('edit-index').value;
+
+            let employees = JSON.parse(localStorage.getItem('employees')) || [];
+
+            if (index == -1) {
+                // เพิ่มพนักงานใหม่
+                employees.push({ name: employeeName, position: employeePosition });
+                employeeMessage.innerHTML = `เพิ่มพนักงาน: ${employeeName} ตำแหน่ง: ${employeePosition} สำเร็จ!`;
+            } else {
+                // แก้ไขพนักงานที่มีอยู่
+                employees[index] = { name: employeeName, position: employeePosition };
+                employeeMessage.innerHTML = `แก้ไขพนักงาน: ${employeeName} ตำแหน่ง: ${employeePosition} สำเร็จ!`;
+            }
+
+            localStorage.setItem('employees', JSON.stringify(employees));
+            employeeMessage.style.color = "green";
+            document.getElementById('employee-name').value = '';
+            document.getElementById('employee-position').value = '';
+            viewEmployees(); // รีเฟรชรายการพนักงาน
+        }
+
+        function viewLeaveRequests() {
+            const leaveRequests = JSON.parse(localStorage.getItem('leaveRequests')) || [];
+            const leaveRequestList = document.getElementById('leave-request-list');
+            leaveRequestList.innerHTML = '';
+
+            leaveRequests.forEach((request, index) => {
+                leaveRequestList.innerHTML += `
+                    <li>
+                        ${request.employeeName} - ${request.leaveType} วันที่: ${request.leaveDate} - เหตุผล: ${request.leaveReason}
+                        <button onclick="approveLeave(${index})">อนุมัติ</button>
+                        <button onclick="denyLeave(${index})">ปฏิเสธ</button>
+                    </li>
+                `;
+            });
+
+            document.getElementById('leave-requests').style.display = "block";
+            document.getElementById('employee-list').style.display = "none";
+            document.getElementById('employee-form').style.display = "none";
+        }
+
+        function approveLeave(index) {
+            const leaveRequests = JSON.parse(localStorage.getItem('leaveRequests')) || [];
+            leaveRequests[index].status = "อนุมัติ";
+            localStorage.setItem('leaveRequests', JSON.stringify(leaveRequests));
+            alert("คำขอได้รับการอนุมัติ");
+            // อัปเดตใน employee-dashboard
+            updateEmployeeApprovalStatus(leaveRequests[index]);
+        }
+
+        function denyLeave(index) {
+            const leaveRequests = JSON.parse(localStorage.getItem('leaveRequests')) || [];
+            leaveRequests[index].status = "ปฏิเสธ";
+            localStorage.setItem('leaveRequests', JSON.stringify(leaveRequests));
+            alert("คำขอได้รับการปฏิเสธ");
+            // อัปเดตใน employee-dashboard
+            updateEmployeeApprovalStatus(leaveRequests[index]);
+        }
+
+        function updateEmployeeApprovalStatus(request) {
+            const leaveRequests = JSON.parse(localStorage.getItem('leaveRequests')) || [];
+            leaveRequests.forEach(req => {
+                if (req.employeeName === request.employeeName) {
+                    req.status = request.status;
+                }
+            });
+            localStorage.setItem('leaveRequests', JSON.stringify(leaveRequests));
+        }
+
+        function logout() {
+            window.location.href = "login.html"; // กลับไปที่หน้า login
+        }
+    </script>
+</body>
+</html>
